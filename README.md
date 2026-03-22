@@ -46,5 +46,5 @@ MIT
 
 ## Prebuilt skill package
 
-This repository also includes a prebuilt  package: 
+This repository also includes a prebuilt `.skill` package: `intervals-strava-sync.skill`
 for direct installation in OpenClaw plugin/skill workflows.
