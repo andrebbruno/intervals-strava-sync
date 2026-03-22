@@ -43,3 +43,8 @@ python3 scripts/sync_activity.py --env-file /path/to/.env --apply
 ## License
 
 MIT
+
+## Prebuilt skill package
+
+This repository also includes a prebuilt  package: 
+for direct installation in OpenClaw plugin/skill workflows.
