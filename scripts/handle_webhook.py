@@ -31,7 +31,7 @@ def main():
     load_env(args.env_file)
 
     secret=getenv('INTERVALS_WEBHOOK_SECRET', required=True)
-    allowed=[x.strip() for x in getenv('WEBHOOK_ALLOWED_EVENT_TYPES','ACTIVITY_UPLOADED,ACTIVITY_ANALYZED').split(',') if x.strip()]
+    allowed=[x.strip() for x in getenv('WEBHOOK_ALLOWED_EVENT_TYPES','ACTIVITY_UPLOADED,ACTIVITY_ANALYZED,ACTIVITY_UPDATED').split(',') if x.strip()]
     target_athlete=getenv('INTERVALS_ATHLETE_ID', required=True)
     state_file=getenv('SYNC_STATE_FILE','/tmp/intervals_strava_sync_state.json')
     logf=getenv('SYNC_LOG_FILE','/tmp/intervals_strava_sync_log.jsonl')
