@@ -79,6 +79,8 @@ def main():
             cmd += ['--target-start', str(ev.get('timestamp'))]
         if activity.get('type'):
             cmd += ['--target-type', str(activity.get('type'))]
+        if activity.get('elapsed_time') is not None:
+            cmd += ['--target-elapsed', str(activity.get('elapsed_time'))]
         if args.apply:
             cmd += ['--apply']
         else:

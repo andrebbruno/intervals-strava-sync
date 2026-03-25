@@ -47,8 +47,9 @@ Use this order:
 1. **Webhook activity.start_date_local** (or activity.start_date) as the primary start-time anchor
 2. **Date + sport type** match (Ride/Run/Swim/Workout)
 3. **Closest start time** (minimum delta seconds)
-4. Fallback to webhook event `timestamp` only if activity start time is missing
-5. Confidence thresholds:
+4. **Elapsed time comparison** (`Intervals.activity.elapsed_time` vs `Strava.elapsed_time`)
+5. Fallback to webhook event `timestamp` only if activity start time is missing
+6. Confidence thresholds:
    - `high`: <= 20 min
    - `medium`: <= 60 min
    - `low`: > 60 min
@@ -57,6 +58,7 @@ Default write policy:
 - Update title only when confidence is `medium` or `high`
 - Update description only when planned workout description exists
 - Skip writes when confidence `low` unless `--force` is used
+- Skip writes when no planned workout match exists (unplanned activity), unless `--force` is used
 
 ## Output policy for Strava
 

@@ -58,8 +58,10 @@ python3 scripts/sync_activity.py --env-file /path/to/.env --apply
 Matching behavior for webhook-driven sync:
 - prefer `activity.start_date_local` from webhook payload
 - fallback to `activity.start_date`
+- compare `activity.elapsed_time` against Strava `elapsed_time`
 - use event `timestamp` only if activity start time is unavailable
 - always combine with sport type
+- if there is no planned workout match, skip automatic rename/description
 
 Use your existing webhook receiver to pass payloads to:
 

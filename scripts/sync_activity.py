@@ -4,7 +4,7 @@ import requests
 from _lib import load_env, getenv, pdt, norm_type, strava_refresh_token, intervals_get, jlog
 
 
-def choose_strava_activity(access_token, activity_id=None, target_start=None, target_type=None, max_delta=7200):
+def choose_strava_activity(access_token, activity_id=None, target_start=None, target_type=None, target_elapsed=None, max_delta=7200):
     if activity_id:
         r=requests.get(f'https://www.strava.com/api/v3/activities/{activity_id}', headers={'Authorization':f'Bearer {access_token}'}, timeout=20)
         r.raise_for_status(); return r.json()
@@ -22,6 +22,8 @@ def choose_strava_activity(access_token, activity_id=None, target_start=None, ta
         score=abs((ts-target_start).total_seconds())
         if target_type and norm_type(a.get('sport_type') or a.get('type')) != norm_type(target_type):
             score += 10800
+        if target_elapsed is not None and a.get('elapsed_time') is not None:
+            score += abs(float(a.get('elapsed_time')) - float(target_elapsed)) * 3
         if score < best_score:
             best_score=score; best=a
     if best is not None and best_score <= max_delta + 10800:
@@ -52,6 +54,7 @@ def main():
     ap.add_argument('--strava-activity-id', type=int)
     ap.add_argument('--target-start')
     ap.add_argument('--target-type')
+    ap.add_argument('--target-elapsed', type=float)
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--apply', action='store_true')
     ap.add_argument('--force', action='store_true')
@@ -71,7 +74,7 @@ def main():
     access=tok['access_token']
 
     target_start = pdt(args.target_start) if args.target_start else None
-    sa=choose_strava_activity(access, args.strava_activity_id, target_start=target_start, target_type=args.target_type, max_delta=max_delta)
+    sa=choose_strava_activity(access, args.strava_activity_id, target_start=target_start, target_type=args.target_type, target_elapsed=args.target_elapsed, max_delta=max_delta)
     if not sa:
         raise SystemExit('No Strava activity found')
 
@@ -103,11 +106,9 @@ def main():
             n=(e.get('name') or '').lower()
             if target and (target in n or n in target): planned=e; break
         if not planned:
-            # prefer same type
-            for e in workouts:
-                if norm_type(e.get('type'))==stype:
-                    planned=e; break
-        if not planned: planned=workouts[0]
+            same_type=[e for e in workouts if norm_type(e.get('type'))==stype]
+            if len(same_type)==1:
+                planned=same_type[0]
 
     new_name=(best.get('name') if best and best.get('name') else sa.get('name'))
     new_desc=build_description(planned) if update_desc else None
@@ -122,6 +123,13 @@ def main():
         'intervals_match': best.get('name') if best else None,
         'planned_event': planned.get('name') if planned else None,
     }
+
+    if not planned and not args.force:
+        out['write_skipped']=True
+        out['reason']='no_planned_workout_match'
+        jlog(logf, out)
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        return
 
     can_write = args.apply and (conf!='low' or args.force)
     if can_write:
