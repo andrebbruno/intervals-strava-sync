@@ -63,10 +63,17 @@ def main():
         if ek in seen:
             continue
 
-        # execute sync in dry-run/apply mode
+        # execute sync in dry-run/apply mode, anchored by webhook activity timing/type
         cmd=['python3', str(Path(__file__).with_name('sync_activity.py'))]
         if args.env_file:
             cmd += ['--env-file', args.env_file]
+        activity = ev.get('activity') or {}
+        if activity.get('start_date_local'):
+            cmd += ['--target-start', str(activity.get('start_date_local'))]
+        elif activity.get('start_date'):
+            cmd += ['--target-start', str(activity.get('start_date'))]
+        if activity.get('type'):
+            cmd += ['--target-type', str(activity.get('type'))]
         if args.apply:
             cmd += ['--apply']
         else:

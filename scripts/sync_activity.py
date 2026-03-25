@@ -4,13 +4,29 @@ import requests
 from _lib import load_env, getenv, pdt, norm_type, strava_refresh_token, intervals_get, jlog
 
 
-def choose_strava_activity(access_token, activity_id=None):
+def choose_strava_activity(access_token, activity_id=None, target_start=None, target_type=None, max_delta=7200):
     if activity_id:
         r=requests.get(f'https://www.strava.com/api/v3/activities/{activity_id}', headers={'Authorization':f'Bearer {access_token}'}, timeout=20)
         r.raise_for_status(); return r.json()
-    r=requests.get('https://www.strava.com/api/v3/athlete/activities?per_page=20&page=1', headers={'Authorization':f'Bearer {access_token}'}, timeout=20)
+    r=requests.get('https://www.strava.com/api/v3/athlete/activities?per_page=30&page=1', headers={'Authorization':f'Bearer {access_token}'}, timeout=20)
     r.raise_for_status(); acts=r.json()
-    return acts[0] if acts else None
+    if not acts:
+        return None
+    if not target_start:
+        return acts[0]
+    best=None; best_score=10**18
+    for a in acts:
+        ts=pdt(a.get('start_date_local')) or pdt(a.get('start_date'))
+        if not ts:
+            continue
+        score=abs((ts-target_start).total_seconds())
+        if target_type and norm_type(a.get('sport_type') or a.get('type')) != norm_type(target_type):
+            score += 10800
+        if score < best_score:
+            best_score=score; best=a
+    if best is not None and best_score <= max_delta + 10800:
+        return best
+    return best or acts[0]
 
 
 def build_description(planned):
@@ -34,6 +50,8 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--env-file')
     ap.add_argument('--strava-activity-id', type=int)
+    ap.add_argument('--target-start')
+    ap.add_argument('--target-type')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--apply', action='store_true')
     ap.add_argument('--force', action='store_true')
@@ -52,7 +70,8 @@ def main():
     tok=strava_refresh_token(cid, cs, rt)
     access=tok['access_token']
 
-    sa=choose_strava_activity(access, args.strava_activity_id)
+    target_start = pdt(args.target_start) if args.target_start else None
+    sa=choose_strava_activity(access, args.strava_activity_id, target_start=target_start, target_type=args.target_type, max_delta=max_delta)
     if not sa:
         raise SystemExit('No Strava activity found')
 
