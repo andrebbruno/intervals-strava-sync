@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, sys
+import argparse, json, sys, uuid
 from pathlib import Path
 from _lib import load_env, getenv, jlog
 import subprocess
@@ -35,6 +35,7 @@ def main():
     target_athlete=getenv('INTERVALS_ATHLETE_ID', required=True)
     state_file=getenv('SYNC_STATE_FILE','/tmp/intervals_strava_sync_state.json')
     logf=getenv('SYNC_LOG_FILE','/tmp/intervals_strava_sync_log.jsonl')
+    notify_dir=Path(getenv('SYNC_NOTIFY_DIR','/home/andrebbruno/.openclaw/workspace/data/sync_notifications'))
 
     raw=''
     if args.stdin:
@@ -68,10 +69,14 @@ def main():
         if args.env_file:
             cmd += ['--env-file', args.env_file]
         activity = ev.get('activity') or {}
+        # Primary anchor: activity start time from the webhook payload itself.
+        # Only fall back to event timestamp if activity start time is unavailable.
         if activity.get('start_date_local'):
             cmd += ['--target-start', str(activity.get('start_date_local'))]
         elif activity.get('start_date'):
             cmd += ['--target-start', str(activity.get('start_date'))]
+        elif ev.get('timestamp'):
+            cmd += ['--target-start', str(ev.get('timestamp'))]
         if activity.get('type'):
             cmd += ['--target-type', str(activity.get('type'))]
         if args.apply:
@@ -81,6 +86,26 @@ def main():
 
         r=subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         jlog(logf, {'webhook_event_key': ek, 'event_type': et, 'rc': r.returncode, 'stdout': r.stdout[:1200], 'stderr': r.stderr[:600]})
+
+        notify_dir.mkdir(parents=True, exist_ok=True)
+        note = {
+            'event_type': et,
+            'status': 'error',
+            'stdout': (r.stdout or '')[:1200],
+            'stderr': (r.stderr or '')[:600],
+        }
+        try:
+            parsed = json.loads(r.stdout) if r.stdout else {}
+            note.update(parsed if isinstance(parsed, dict) else {})
+            if parsed.get('write_ok') or parsed.get('ok'):
+                note['status'] = 'success'
+            else:
+                note['status'] = 'error'
+        except Exception:
+            pass
+        note_path = notify_dir / f"{uuid.uuid4().hex}.json"
+        note_path.write_text(json.dumps(note, ensure_ascii=False, indent=2), encoding='utf-8')
+
         processed.append(ek)
         seen.add(ek)
 

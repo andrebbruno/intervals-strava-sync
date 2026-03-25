@@ -55,6 +55,12 @@ python3 scripts/sync_activity.py --env-file /path/to/.env --apply
 
 ## 8) Enable webhook worker
 
+Matching behavior for webhook-driven sync:
+- prefer `activity.start_date_local` from webhook payload
+- fallback to `activity.start_date`
+- use event `timestamp` only if activity start time is unavailable
+- always combine with sport type
+
 Use your existing webhook receiver to pass payloads to:
 
 ```bash

@@ -44,9 +44,11 @@ Behavior:
 ## Matching policy (deterministic)
 
 Use this order:
-1. **Date + sport type** match (Ride/Run/Swim/Workout)
-2. **Closest start time** (minimum delta seconds)
-3. Confidence thresholds:
+1. **Webhook activity.start_date_local** (or activity.start_date) as the primary start-time anchor
+2. **Date + sport type** match (Ride/Run/Swim/Workout)
+3. **Closest start time** (minimum delta seconds)
+4. Fallback to webhook event `timestamp` only if activity start time is missing
+5. Confidence thresholds:
    - `high`: <= 20 min
    - `medium`: <= 60 min
    - `low`: > 60 min
