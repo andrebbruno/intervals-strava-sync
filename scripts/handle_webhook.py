@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, sys, uuid
+import argparse, json, sys, uuid, time
 from pathlib import Path
 from _lib import load_env, getenv, jlog
 import subprocess
@@ -36,6 +36,7 @@ def main():
     state_file=getenv('SYNC_STATE_FILE','/tmp/intervals_strava_sync_state.json')
     logf=getenv('SYNC_LOG_FILE','/tmp/intervals_strava_sync_log.jsonl')
     notify_dir=Path(getenv('SYNC_NOTIFY_DIR','/home/andrebbruno/.openclaw/workspace/data/sync_notifications'))
+    sync_delay_seconds=int(getenv('SYNC_DELAY_SECONDS','120'))
 
     raw=''
     if args.stdin:
@@ -85,6 +86,10 @@ def main():
             cmd += ['--apply']
         else:
             cmd += ['--dry-run']
+
+        # Give Strava time to ingest the corresponding activity before matching.
+        if sync_delay_seconds > 0:
+            time.sleep(sync_delay_seconds)
 
         r=subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         jlog(logf, {'webhook_event_key': ek, 'event_type': et, 'rc': r.returncode, 'stdout': r.stdout[:1200], 'stderr': r.stderr[:600]})
