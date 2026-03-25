@@ -5,6 +5,13 @@ description: Sync completed activities from Intervals webhooks to Strava using s
 
 # Intervals → Strava Sync (Script-First)
 
+## Current architecture
+
+- **Intervals webhook**: cache/context only
+- **Strava webhook**: final trigger for rename + description update
+- **Intervals API**: source of truth for the matching/plan lookup at execution time
+- **Telegram notification**: automatic success/error message after sync attempt
+
 ## Quick start
 
 1) Read setup checklist: `references/setup.md`

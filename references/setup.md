@@ -10,12 +10,13 @@
 4. Save.
 5. Authorize athlete via OAuth URL for your app (athlete appears as testing).
 
-## 2) Configure tunnel and receiver
+## 2) Configure tunnel and receivers
 
-Use Cloudflare Tunnel (or equivalent) so Intervals can reach your endpoint.
+Use Cloudflare Tunnel (or equivalent) so both Intervals and Strava can reach your endpoints.
 
-Endpoint path expected by this skill workflow:
-- `/webhooks/intervals`
+Endpoints used by this workflow:
+- Intervals cache receiver: `/webhooks/intervals`
+- Strava webhook receiver: `/` (challenge + activity create/update)
 
 ## 3) Strava OAuth with write scope
 
